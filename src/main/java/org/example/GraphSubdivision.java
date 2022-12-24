@@ -1,46 +1,71 @@
-//package org.example;
-//
-//import com.mathsystem.api.graph.model.Graph;
-//import com.mathsystem.api.graph.model.Vertex;
-//import com.mathsystem.api.graph.oldmodel.directed.DirectedGraph;
-//import com.mathsystem.domain.graph.repository.Color;
-//import com.mathsystem.domain.graph.repository.GraphType;
-//import com.mathsystem.domain.plugin.plugintype.GraphProperty;
-//
-//import java.util.*;
-//
-//public class GraphSubdivision implements GraphProperty {
-//    @Override
-//    public boolean execute(Graph abstractGraph) {
-//        return false;
-//        // get subgraph with vertices and edges of red color
-////        Graph subgraph = getSubgraphOfColor(abstractGraph, Color.red);
-//        // get cyclic graph space of both graphs
-////        Graph cyclicGraphSpace1 = getCyclicGraphSpace(abstractGraph);
-////        Graph cyclicGraphSpace2 = getCyclicGraphSpace(subgraph);
-//        // return true if cyclic graph space of both graphs are isomorphic to each other
-////        return isIsomorphic(cyclicGraphSpace1, cyclicGraphSpace2);
-//    }
-////    private Graph getSubgraphOfColor(Graph graph, Color color) {
-////        // get subgraph with vertices and edges of given color
-////        Graph subgraph = new Graph(graph.getDirectType(), 0, 0, null, null);
-////
-//////        List<UUID> vertices = new List<>();
-////
-////        graph.getVertices().forEach((uuid, vertex) -> {
-////            if (vertex.getColor() == color) {
-////                vertices.put(uuid, vertex.);
-////            }
-////        });
-//////        subgraph.setVertices();
-////        // add vertices of given color to subgraph
-////
-////    }
-////    private Graph getCyclicGraphSpace(Graph graph) {
-////        // get cyclic graph space of graph
-////    }
-////    private boolean isIsomorphic(Graph graph1, Graph graph2) {
-////        // get cyclic graph space of both graphs
-////        // return true if cyclic graph space of both graphs are isomorphic to each other
-////    }
-//}
+package org.example;
+
+import com.mathsystem.api.graph.model.Edge;
+import com.mathsystem.api.graph.model.Graph;
+import com.mathsystem.api.graph.model.Vertex;
+import com.mathsystem.domain.graph.repository.Color;
+import com.mathsystem.domain.graph.repository.GraphType;
+import com.mathsystem.domain.plugin.plugintype.GraphProperty;
+
+import java.util.*;
+
+public class GraphSubdivision implements GraphProperty {
+    @Override
+    public boolean execute(Graph abstractGraph) {
+        if (abstractGraph.getDirectType() == GraphType.UNDIRECTED) {
+            return false;
+        }
+
+        Map<UUID, ArrayList<Boolean>> markedVertexes = new HashMap<>();
+
+        for (Vertex vertex : abstractGraph.getVertices().values()) {
+            if (vertex.getColor() != Color.gray) {
+                markedVertexes.put(vertex.getId(), new ArrayList<>(Arrays.asList(false, false)));
+            }
+        }
+
+        if (markedVertexes.size() == 0) {
+            return false;
+        }
+
+        List<Edge> coloredToUncoloredEdges = new ArrayList<>();
+        for (Edge edge : abstractGraph.getEdges()) {
+            UUID vertex1 = edge.getFromV();
+            UUID vertex2 = edge.getToV();
+            if (markedVertexes.containsKey(vertex2) && !markedVertexes.containsKey(vertex1)) {
+                coloredToUncoloredEdges.add(edge);
+            } else if (markedVertexes.containsKey(vertex1) && !markedVertexes.containsKey(vertex2)) {
+                coloredToUncoloredEdges.add(edge);
+            } else if (markedVertexes.containsKey(vertex1) && markedVertexes.containsKey(vertex2)) {
+                return false;
+            }
+        }
+
+        for (Edge edge : coloredToUncoloredEdges) {
+            UUID vertex1 = edge.getFromV();
+            UUID vertex2 = edge.getToV();
+            if (markedVertexes.containsKey(vertex1)) {
+                if (markedVertexes.get(vertex1).get(1)) {
+
+                    return false;
+                } else {
+                    markedVertexes.get(vertex1).set(1, true);
+                }
+
+            } else {
+                if (markedVertexes.get(vertex2).get(0)) {
+                    return false;
+                } else {
+                    markedVertexes.get(vertex2).set(0, true);
+                }
+            }
+        }
+        for (ArrayList<Boolean> booleans : markedVertexes.values()) {
+            if (!booleans.get(0) || !booleans.get(1)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
